@@ -22,9 +22,46 @@ export function useWallet() {
     error: null,
   })
 
-  // Check if wallet is already connected on mount
   useEffect(() => {
     checkWalletConnection()
+  }, [])
+
+  const setupListeners = useCallback(() => {
+    if (typeof window === "undefined" || !("ethereum" in window)) {
+      return
+    }
+
+    const ethereum = window.ethereum as any
+
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setState({
+          address: null,
+          chainId: null,
+          balance: null,
+          isConnected: false,
+          isConnecting: false,
+          error: null,
+        })
+      } else {
+        setState((prev) => ({ ...prev, address: accounts[0] }))
+      }
+    }
+
+    const handleChainChanged = (chainId: string) => {
+      setState((prev) => ({
+        ...prev,
+        chainId: Number.parseInt(chainId, 16),
+      }))
+    }
+
+    ethereum.on("accountsChanged", handleAccountsChanged)
+    ethereum.on("chainChanged", handleChainChanged)
+
+    return () => {
+      ethereum.removeListener("accountsChanged", handleAccountsChanged)
+      ethereum.removeListener("chainChanged", handleChainChanged)
+    }
   }, [])
 
   const checkWalletConnection = useCallback(async () => {
@@ -78,15 +115,9 @@ export function useWallet() {
         isConnected: true,
         isConnecting: false,
         error: null,
-      })(
-        // Listen for account changes
-        window.ethereum as any,
-      )
-        .on(
-          "accountsChanged",
-          handleAccountsChanged,
-        )(window.ethereum as any)
-        .on("chainChanged", handleChainChanged)
+      })
+
+      setupListeners()
     } catch (error: any) {
       setState((prev) => ({
         ...prev,
@@ -94,28 +125,17 @@ export function useWallet() {
         error: error?.message || "Failed to connect wallet",
       }))
     }
-  }, [])
+  }, [setupListeners])
 
-  const handleAccountsChanged = useCallback((accounts: string[]) => {
-    if (accounts.length === 0) {
-      setState({
-        address: null,
-        chainId: null,
-        balance: null,
-        isConnected: false,
-        isConnecting: false,
-        error: null,
-      })
-    } else {
-      setState((prev) => ({ ...prev, address: accounts[0] }))
-    }
-  }, [])
-
-  const handleChainChanged = useCallback((chainId: string) => {
-    setState((prev) => ({
-      ...prev,
-      chainId: Number.parseInt(chainId, 16),
-    }))
+  const connectDemoAccount = useCallback(() => {
+    setState({
+      address: "0x742d35Cc6634C0532925a3b844Bc7e7595f0bEb",
+      chainId: 137,
+      balance: "10.5",
+      isConnected: true,
+      isConnecting: false,
+      error: null,
+    })
   }, [])
 
   const switchNetwork = useCallback(async (chainId: number) => {
@@ -130,7 +150,6 @@ export function useWallet() {
       })
     } catch (error: any) {
       if (error.code === 4902) {
-        // Chain not added, try to add it
         const chainConfig = Object.values(NETWORK_CONFIG).find((config) => config.chainId === chainId)
         if (chainConfig) {
           await (window.ethereum as any).request({
@@ -158,20 +177,12 @@ export function useWallet() {
       isConnecting: false,
       error: null,
     })
-
-    if (typeof window !== "undefined" && "ethereum" in window) {
-      ;(window.ethereum as any)
-        .removeListener(
-          "accountsChanged",
-          handleAccountsChanged,
-        )(window.ethereum as any)
-        .removeListener("chainChanged", handleChainChanged)
-    }
-  }, [handleAccountsChanged, handleChainChanged])
+  }, [])
 
   return {
     ...state,
     connectWallet,
+    connectDemoAccount,
     disconnect,
     switchNetwork,
     checkWalletConnection,

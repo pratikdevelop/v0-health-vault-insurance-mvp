@@ -70,7 +70,7 @@ interface Transaction {
 }
 
 export default function Dashboard() {
-  const { address, isConnected, connectWallet, isConnecting, chainId, balance } = useWallet()
+  const { address, isConnected, connectWallet, isConnecting, chainId, balance, connectDemoAccount } = useWallet()
   const { deposit, depositState } = useSmartContract(address || null, chainId || null)
   const { healthData, isLoading } = useRealTimeHealthData()
 
@@ -224,19 +224,21 @@ export default function Dashboard() {
               variant="outline"
               size="lg"
               className="w-full bg-transparent border-2 hover:bg-accent/10 transition-all duration-300"
+              disabled
+              title="WalletConnect integration coming soon"
             >
               <Smartphone className="w-5 h-5 mr-2" />
-              Connect WalletConnect
+              Connect WalletConnect (Coming Soon)
             </Button>
 
             <Button
               variant="outline"
               size="lg"
               className="w-full bg-transparent border-2 hover:bg-primary/10 transition-all duration-300"
-              onClick={connectWallet}
+              onClick={connectDemoAccount}
             >
               <User className="w-5 h-5 mr-2" />
-              Use Demo Account
+              Try Demo Account
             </Button>
           </div>
 
