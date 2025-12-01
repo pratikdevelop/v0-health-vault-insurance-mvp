@@ -33,6 +33,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { RealTimeEventsMonitor } from "@/components/real-time-events-monitor"
+import { CreatePoolModal } from "@/components/create-pool-modal"
 
 interface HealthData {
   heartRate: number
@@ -80,6 +81,8 @@ export default function Dashboard() {
   const [selectedPoolId, setSelectedPoolId] = useState(1)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [poolsData, setPoolsData] = useState<any[]>([])
+  const [isCreatePoolOpen, setIsCreatePoolOpen] = useState(false)
+  const [isCreatingPool, setIsCreatingPool] = useState(false)
 
   useEffect(() => {
     fetchPoolsData()
@@ -177,6 +180,52 @@ export default function Dashboard() {
     const result = await deposit(depositAmount, selectedPoolId)
     if (result) {
       setDepositAmount("")
+    }
+  }
+
+  const handleCreatePool = async (poolData: {
+    name: string
+    trigger: string
+    premium: number
+    coverage: number
+  }) => {
+    setIsCreatingPool(true)
+    try {
+      // Simulate blockchain transaction
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // Add new pool to the local state
+      const newPool = {
+        id: poolsData.length + 1,
+        name: poolData.name,
+        trigger: poolData.trigger,
+        payoutAmount: poolData.coverage,
+        totalStaked: poolData.premium * 100,
+        isActive: true,
+        members: Math.floor(Math.random() * 200) + 50,
+      }
+
+      setPoolsData([...poolsData, newPool])
+      setIsCreatePoolOpen(false)
+
+      // Log transaction
+      setTransactions((prev) => [
+        {
+          hash: "0x" + Math.random().toString(16).slice(2),
+          status: "confirmed",
+          amount: 0,
+          poolId: newPool.id,
+          timestamp: Date.now(),
+        },
+        ...prev,
+      ])
+
+      alert(`Pool "${poolData.name}" created successfully!`)
+    } catch (error) {
+      console.error("Failed to create pool:", error)
+      alert("Failed to create pool")
+    } finally {
+      setIsCreatingPool(false)
     }
   }
 
@@ -506,7 +555,10 @@ export default function Dashboard() {
             <Card className="p-8 border border-border/50 bg-card/50 backdrop-blur-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-foreground">Your Insurance Pools</h2>
-                <Button className="gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90">
+                <Button
+                  onClick={() => setIsCreatePoolOpen(true)}
+                  className="gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                >
                   <Plus className="w-4 h-4" />
                   New Pool
                 </Button>
@@ -589,7 +641,10 @@ export default function Dashboard() {
                   <ArrowDownRight className="w-5 h-5" />
                   <span className="text-xs">Withdraw</span>
                 </Button>
-                <Button className="h-16 flex-col gap-2 bg-background/50 border border-border/50 hover:border-primary/30">
+                <Button
+                  onClick={() => setIsCreatePoolOpen(true)}
+                  className="h-16 flex-col gap-2 bg-background/50 border border-border/50 hover:border-primary/30"
+                >
                   <Plus className="w-5 h-5" />
                   <span className="text-xs">New Pool</span>
                 </Button>
@@ -740,6 +795,14 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Create Pool Modal */}
+      <CreatePoolModal
+        isOpen={isCreatePoolOpen}
+        onClose={() => setIsCreatePoolOpen(false)}
+        onCreatePool={handleCreatePool}
+        isLoading={isCreatingPool}
+      />
     </div>
   )
 }
